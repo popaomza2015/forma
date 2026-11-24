@@ -103,20 +103,23 @@ export const TodayTab: React.FC<TodayTabProps> = ({
   ];
 
   // Latest measurements
-  const latestMeasure = measurements[0];
-  const prevMeasure = measurements[1];
+  const latestMeasure = measurements?.[0];
+  const prevMeasure = measurements?.[1];
+
+  const latestVals = latestMeasure?.values || {};
+  const prevVals = prevMeasure?.values || {};
 
   let waistChangeText = '';
-  if (latestMeasure?.values.waist && prevMeasure?.values.waist) {
-    const diff = Math.round((latestMeasure.values.waist - prevMeasure.values.waist) * 10) / 10;
+  if (latestVals.waist !== undefined && prevVals.waist !== undefined) {
+    const diff = Math.round((latestVals.waist - prevVals.waist) * 10) / 10;
     if (diff > 0) waistChangeText = `+${diff} cm`;
     else if (diff < 0) waistChangeText = `${diff} cm`;
     else waistChangeText = 'เท่าเดิม';
   }
 
   let weightChangeText = '';
-  if (latestMeasure?.values.weight && prevMeasure?.values.weight) {
-    const diff = Math.round((latestMeasure.values.weight - prevMeasure.values.weight) * 10) / 10;
+  if (latestVals.weight !== undefined && prevVals.weight !== undefined) {
+    const diff = Math.round((latestVals.weight - prevVals.weight) * 10) / 10;
     if (diff > 0) weightChangeText = `+${diff} kg`;
     else if (diff < 0) weightChangeText = `${diff} kg`;
     else weightChangeText = 'เท่าเดิม';
@@ -380,7 +383,7 @@ export const TodayTab: React.FC<TodayTabProps> = ({
               <div className="text-[11px] text-[#6F6A62]">รอบเอว (Waist)</div>
               <div className="flex items-baseline space-x-1.5 mt-0.5">
                 <span className="text-xl font-bold tabular-numbers text-[#1C1B19]">
-                  {latestMeasure.values.waist ?? '-'}
+                  {latestVals.waist ?? '-'}
                 </span>
                 <span className="text-xs text-[#6F6A62]">cm</span>
               </div>
@@ -395,7 +398,7 @@ export const TodayTab: React.FC<TodayTabProps> = ({
               <div className="text-[11px] text-[#6F6A62]">น้ำหนักตัว (Weight)</div>
               <div className="flex items-baseline space-x-1.5 mt-0.5">
                 <span className="text-xl font-bold tabular-numbers text-[#1C1B19]">
-                  {latestMeasure.values.weight ?? '-'}
+                  {latestVals.weight ?? '-'}
                 </span>
                 <span className="text-xs text-[#6F6A62]">kg</span>
               </div>

@@ -19,8 +19,8 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onSelectTab }
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#FBF9F5] border-t border-[#E4DDD2]">
-      <div className="mobile-frame mx-auto">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#FBF9F5] border-t border-[#E4DDD2] shadow-sm">
+      <div className="max-w-[480px] mx-auto w-full">
         <div className="h-[56px] flex items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom,0px)]">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -38,7 +38,7 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, onSelectTab }
                 <div className={`transition-transform duration-200 ${isActive ? 'scale-105' : 'scale-100'}`}>
                   {tab.icon}
                 </div>
-                <span className={`text-[11px] mt-0.5 font-medium tracking-tight ${isActive ? 'text-[#1C1B19] font-semibold' : 'text-[#6F6A62]'}`}>
+                <span className={`text-[11px] mt-0.5 font-medium tracking-tight ${isActive ? 'text-[#1C1B19] font-bold' : 'text-[#6F6A62]'}`}>
                   {tab.label}
                 </span>
               </button>

@@ -32,7 +32,7 @@ interface MeasureTabProps {
 
 export const MeasureTab: React.FC<MeasureTabProps> = ({
   profile,
-  measurements,
+  measurements = [],
   onSaveRecord,
   isFlowOpen,
   onOpenFlow,
@@ -41,16 +41,19 @@ export const MeasureTab: React.FC<MeasureTabProps> = ({
   // Selected site for the single-site line trend history (avoiding multi-series dashboard clutter)
   const [selectedHistorySite, setSelectedHistorySite] = useState<MeasurementSiteKey>('waist');
 
-  const latest = measurements[0];
-  const previous = measurements[1];
+  const latest = measurements?.[0];
+  const previous = measurements?.[1];
+
+  const latestValues = latest?.values || {};
+  const prevValues = previous?.values || {};
 
   // Waist & Waist-to-Hip Reference evaluation (IDF/WHO Asian guidelines: reference only, never diagnosis)
-  const waistVal = latest?.values.waist;
-  const hipVal = latest?.values.hip;
+  const waistVal = latestValues?.waist;
+  const hipVal = latestValues?.hip;
   const waistMaxRef =
-    profile.sex === 'male' ? ASIAN_REFERENCE.waist.maleMax : ASIAN_REFERENCE.waist.femaleMax;
+    profile?.sex === 'male' ? ASIAN_REFERENCE.waist.maleMax : ASIAN_REFERENCE.waist.femaleMax;
   const whrMaxRef =
-    profile.sex === 'male'
+    profile?.sex === 'male'
       ? ASIAN_REFERENCE.waistToHip.maleMax
       : ASIAN_REFERENCE.waistToHip.femaleMax;
 
@@ -60,11 +63,11 @@ export const MeasureTab: React.FC<MeasureTabProps> = ({
   const navyBf =
     latest?.navyBodyFat ??
     calculateNavyBodyFat(
-      profile.sex,
-      latest?.values.height,
-      latest?.values.neck,
-      latest?.values.waist,
-      latest?.values.hip
+      profile?.sex || 'male',
+      latestValues?.height || profile?.height,
+      latestValues?.neck,
+      latestValues?.waist,
+      latestValues?.hip
     );
 
   return (
@@ -85,7 +88,7 @@ export const MeasureTab: React.FC<MeasureTabProps> = ({
       {/* Primary Action Button */}
       <button
         onClick={onOpenFlow}
-        className="w-full h-[52px] rounded-[12px] bg-[#1C1B19] text-[#FBF9F5] font-semibold text-sm flex items-center justify-center space-x-2 active:scale-[0.99] transition-transform duration-200"
+        className="w-full h-[52px] rounded-[12px] bg-[#1C1B19] text-[#FBF9F5] font-semibold text-sm flex items-center justify-center space-x-2 active:scale-[0.99] transition-transform duration-200 shadow-sm"
       >
         <Ruler className="w-4 h-4 text-[#A6844A]" />
         <span>บันทึกสัดส่วนใหม่ (เทปวัดรอบตัว)</span>
@@ -105,7 +108,7 @@ export const MeasureTab: React.FC<MeasureTabProps> = ({
             <div>
               <div className="text-xs text-[#6F6A62]">ประมาณการเปอร์เซ็นต์ไขมัน</div>
               <div className="text-xs text-[#6F6A62]/80 mt-0.5">
-                ประเมินจากรอบคอ เอว ส่วนสูง {profile.sex === 'female' ? 'และสะโพก' : ''}
+                ประเมินจากรอบคอ เอว ส่วนสูง {profile?.sex === 'female' ? 'และสะโพก' : ''}
               </div>
             </div>
             <div className="text-right">
@@ -126,7 +129,7 @@ export const MeasureTab: React.FC<MeasureTabProps> = ({
 
         <div className="grid grid-cols-2 gap-3 text-xs">
           <div className="p-3 bg-[#F3F0EA] rounded-[12px] border border-[#E4DDD2]">
-            <div className="text-[10px] text-[#6F6A62]">รอบเอวอ้างอิง ({profile.sex === 'male' ? 'ชาย' : 'หญิง'})</div>
+            <div className="text-[10px] text-[#6F6A62]">รอบเอวอ้างอิง ({profile?.sex === 'male' ? 'ชาย' : 'หญิง'})</div>
             <div className="flex items-baseline space-x-1 mt-0.5">
               <span className="text-lg font-bold tabular-numbers text-[#1C1B19]">
                 {waistVal ?? '—'}
@@ -134,7 +137,7 @@ export const MeasureTab: React.FC<MeasureTabProps> = ({
               <span className="text-[11px] text-[#6F6A62]">/ {waistMaxRef} cm</span>
             </div>
             <p className="text-[10px] text-[#6F6A62] mt-1">
-              {waistVal
+              {waistVal !== undefined && waistVal !== null
                 ? waistVal <= waistMaxRef
                   ? 'อยู่ในเกณฑ์อ้างอิง'
                   : `เกินเกณฑ์ ${Math.round((waistVal - waistMaxRef) * 10) / 10} cm`
@@ -182,13 +185,13 @@ export const MeasureTab: React.FC<MeasureTabProps> = ({
 
         <div className="rounded-[16px] bg-[#FBF9F5] border border-[#E4DDD2] overflow-hidden divide-y divide-[#E4DDD2] shadow-sm">
           {MEASUREMENT_PROTOCOLS.map((site) => {
-            const currentVal = latest?.values[site.key];
-            const prevVal = previous?.values[site.key];
+            const currentVal = latestValues?.[site.key];
+            const prevVal = prevValues?.[site.key];
 
             let diffText = '—';
             let diffColor = 'text-[#6F6A62]';
 
-            if (currentVal !== undefined && prevVal !== undefined) {
+            if (currentVal !== undefined && currentVal !== null && prevVal !== undefined && prevVal !== null) {
               const diff = Math.round((currentVal - prevVal) * 10) / 10;
               if (diff > 0) {
                 diffText = `+${diff} ${site.unit}`;
@@ -220,7 +223,7 @@ export const MeasureTab: React.FC<MeasureTabProps> = ({
                 <div className="flex items-baseline space-x-3 text-right">
                   <div>
                     <span className="text-lg font-bold tabular-numbers text-[#1C1B19]">
-                      {currentVal !== undefined ? currentVal : '—'}
+                      {currentVal !== undefined && currentVal !== null ? currentVal : '—'}
                     </span>
                   </div>
 
@@ -255,17 +258,18 @@ export const MeasureTab: React.FC<MeasureTabProps> = ({
 
         {/* Date List for selected site */}
         <div className="rounded-[16px] bg-[#FBF9F5] border border-[#E4DDD2] divide-y divide-[#E4DDD2] shadow-sm">
-          {measurements.length === 0 ? (
+          {!measurements || measurements.length === 0 ? (
             <div className="p-5 text-center text-xs text-[#6F6A62]">
               ยังไม่มีประวัติการวัดสัดส่วน
             </div>
           ) : (
             measurements.map((rec, index) => {
-              const val = rec.values[selectedHistorySite];
+              const recValues = rec?.values || {};
+              const val = recValues?.[selectedHistorySite];
               const nextOlderRec = measurements[index + 1];
-              const olderVal = nextOlderRec?.values[selectedHistorySite];
+              const olderVal = nextOlderRec?.values?.[selectedHistorySite];
               let change = '';
-              if (val !== undefined && olderVal !== undefined) {
+              if (val !== undefined && val !== null && olderVal !== undefined && olderVal !== null) {
                 const diff = Math.round((val - olderVal) * 10) / 10;
                 if (diff > 0) change = `+${diff}`;
                 else if (diff < 0) change = `${diff}`;
@@ -273,7 +277,7 @@ export const MeasureTab: React.FC<MeasureTabProps> = ({
               }
 
               return (
-                <div key={rec.id} className="p-3 px-4 flex items-center justify-between text-xs">
+                <div key={rec.id || index} className="p-3 px-4 flex items-center justify-between text-xs">
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-3.5 h-3.5 text-[#A6844A]" />
                     <span className="tabular-numbers text-[#6F6A62]">{rec.date}</span>
@@ -281,7 +285,7 @@ export const MeasureTab: React.FC<MeasureTabProps> = ({
 
                   <div className="flex items-baseline space-x-3">
                     <span className="text-sm font-bold tabular-numbers text-[#1C1B19]">
-                      {val !== undefined ? `${val} cm` : '—'}
+                      {val !== undefined && val !== null ? `${val} cm` : '—'}
                     </span>
                     {change && (
                       <span className="text-[11px] tabular-numbers font-medium text-[#6F6A62]">

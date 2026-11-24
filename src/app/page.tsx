@@ -7,6 +7,7 @@ import {
   WorkoutSessionLog,
   FoodItem,
   MeasurementRecord,
+  MealCategoryKey,
 } from '@/types';
 import {
   getStoredProfile,
@@ -47,6 +48,7 @@ export default function Home() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [activeSessionDay, setActiveSessionDay] = useState<DayPlan | null>(null);
   const [isFoodSheetOpen, setIsFoodSheetOpen] = useState(false);
+  const [foodSheetDefaultCategory, setFoodSheetDefaultCategory] = useState<MealCategoryKey>('กลางวัน');
   const [isMeasureFlowOpen, setIsMeasureFlowOpen] = useState(false);
 
   // Initialize and load from localStorage
@@ -54,6 +56,9 @@ export default function Home() {
     let p = getStoredProfile();
 
     if (p) {
+      // Seed data if empty so center of screens is immediately active
+      seedSampleDataIfNeeded(p);
+
       setProfile(p);
       let plan = getStoredPlan();
       if (!plan || plan.length === 0) {
@@ -79,7 +84,7 @@ export default function Home() {
     setWeeklyPlan(newPlan);
     saveStoredPlan(newPlan);
 
-    // Seed sample measurements and meals
+    // Seed baseline measurements and starter meals so pages are never empty!
     seedSampleDataIfNeeded(newProfile);
     setMeasurements(getStoredMeasurements());
     setFoodLogs(getStoredFoodLogs());
@@ -114,6 +119,13 @@ export default function Home() {
     setFoodLogs(getStoredFoodLogs());
   };
 
+  const handleOpenFoodSheet = (category?: MealCategoryKey) => {
+    if (category) {
+      setFoodSheetDefaultCategory(category);
+    }
+    setIsFoodSheetOpen(true);
+  };
+
   // Measurement handlers
   const handleSaveMeasurement = (record: MeasurementRecord) => {
     saveMeasurementRecord(record);
@@ -136,8 +148,11 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-[#F3F0EA] flex items-center justify-center">
         <div className="flex flex-col items-center space-y-2">
-          <span className="font-bold text-xl tracking-wider text-[#1C1B19]">FORMA</span>
-          <span className="text-xs text-[#6F6A62]">กำลังโหลดสมุดบันทึก...</span>
+          <div className="flex items-center space-x-1.5">
+            <span className="font-extrabold text-2xl tracking-wider text-[#1C1B19]">FORMA</span>
+            <span className="w-2 h-2 rounded-full bg-[#A6844A]"></span>
+          </div>
+          <span className="text-xs text-[#6F6A62]">กำลังโหลดสมุดบันทึกสรีระ...</span>
         </div>
       </div>
     );
@@ -150,7 +165,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#F3F0EA] flex flex-col justify-between relative">
-      {/* Header with profile trigger */}
+      {/* Native-like Header with profile trigger */}
       <Header
         profile={profile}
         onOpenProfile={() => setIsProfileOpen(true)}
@@ -166,7 +181,7 @@ export default function Home() {
             measurements={measurements}
             workoutLogs={workoutLogs}
             onStartSession={handleStartSession}
-            onOpenFoodSheet={() => setIsFoodSheetOpen(true)}
+            onOpenFoodSheet={handleOpenFoodSheet}
             onOpenMeasureFlow={() => setIsMeasureFlowOpen(true)}
             onNavigateTab={setActiveTab}
           />

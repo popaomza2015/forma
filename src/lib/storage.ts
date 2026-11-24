@@ -5,7 +5,7 @@ import {
   FoodItem,
   MeasurementRecord,
 } from '@/types';
-import { generateWeeklyPlan, calculateCalorieTarget } from './constants';
+import { generateWeeklyPlan, calculateCalorieTarget, calculateNavyBodyFat } from './constants';
 
 const STORAGE_KEYS = {
   PROFILE: 'forma_user_profile',
@@ -13,6 +13,7 @@ const STORAGE_KEYS = {
   WORKOUT_LOGS: 'forma_workout_logs',
   FOOD_LOGS: 'forma_food_logs',
   MEASUREMENTS: 'forma_measurements',
+  WATER: 'forma_water_logs',
 };
 
 export function getStoredProfile(): UserProfile | null {
@@ -137,46 +138,75 @@ export function saveMeasurementRecord(record: MeasurementRecord): void {
   }
 }
 
+export function getWaterGlasses(): number {
+  if (typeof window === 'undefined') return 4;
+  try {
+    const today = getTodayDateString();
+    const raw = localStorage.getItem(`${STORAGE_KEYS.WATER}_${today}`);
+    return raw ? Number(raw) : 4;
+  } catch {
+    return 4;
+  }
+}
+
+export function saveWaterGlasses(count: number): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const today = getTodayDateString();
+    localStorage.setItem(`${STORAGE_KEYS.WATER}_${today}`, String(Math.max(0, count)));
+  } catch (err) {
+    console.error('Failed to save water count', err);
+  }
+}
+
 /**
  * Initialize sample initial measurement & food data if empty, so user immediately experiences Brass Tape design
  */
 export function seedSampleDataIfNeeded(profile: UserProfile): void {
   if (typeof window === 'undefined') return;
-  
+
   const existingMeasurements = getStoredMeasurements();
   if (existingMeasurements.length === 0) {
+    const isMale = profile.sex === 'male';
+    const initialWaist = isMale ? Math.round(profile.height * 0.48 * 10) / 10 : Math.round(profile.height * 0.43 * 10) / 10;
+    const initialHip = isMale ? Math.round(initialWaist * 1.14 * 10) / 10 : Math.round(initialWaist * 1.32 * 10) / 10;
+    const initialNeck = isMale ? 38.0 : 33.0;
+
+    const bf1 = calculateNavyBodyFat(profile.sex, profile.height, initialNeck, initialWaist, initialHip);
+    const bf2 = calculateNavyBodyFat(profile.sex, profile.height, initialNeck, initialWaist + 0.8, initialHip + 0.6);
+
     const initialRecords: MeasurementRecord[] = [
       {
-        id: 'rec_init_2',
+        id: 'rec_baseline_today',
+        date: getTodayDateString(),
+        timestamp: new Date().toISOString(),
+        values: {
+          height: profile.height,
+          weight: profile.weight,
+          waist: initialWaist,
+          hip: initialHip,
+          neck: initialNeck,
+          chest: isMale ? 96.5 : 88.0,
+          arm: isMale ? 33.0 : 27.5,
+          thigh: isMale ? 54.0 : 51.5,
+        },
+        navyBodyFat: bf1 ?? (isMale ? 17.5 : 23.5),
+      },
+      {
+        id: 'rec_baseline_prev',
         date: getPastDateString(14),
         timestamp: new Date(Date.now() - 14 * 86400000).toISOString(),
         values: {
           height: profile.height,
-          weight: profile.weight + 0.8,
-          waist: profile.sex === 'male' ? 84.5 : 74.0,
-          hip: profile.sex === 'male' ? 96.0 : 98.0,
-          neck: profile.sex === 'male' ? 38.0 : 33.0,
-          chest: 96.0,
-          arm: 32.5,
-          thigh: 54.0,
+          weight: Math.round((profile.weight + 0.8) * 10) / 10,
+          waist: Math.round((initialWaist + 0.8) * 10) / 10,
+          hip: Math.round((initialHip + 0.6) * 10) / 10,
+          neck: initialNeck,
+          chest: isMale ? 96.0 : 87.5,
+          arm: isMale ? 32.5 : 27.0,
+          thigh: isMale ? 54.5 : 52.0,
         },
-        navyBodyFat: profile.sex === 'male' ? 18.2 : 24.6,
-      },
-      {
-        id: 'rec_init_1',
-        date: getPastDateString(2),
-        timestamp: new Date(Date.now() - 2 * 86400000).toISOString(),
-        values: {
-          height: profile.height,
-          weight: profile.weight,
-          waist: profile.sex === 'male' ? 83.5 : 73.0,
-          hip: profile.sex === 'male' ? 95.5 : 97.2,
-          neck: profile.sex === 'male' ? 38.0 : 33.0,
-          chest: 96.5,
-          arm: 32.8,
-          thigh: 53.8,
-        },
-        navyBodyFat: profile.sex === 'male' ? 17.5 : 23.8,
+        navyBodyFat: bf2 ?? (isMale ? 18.2 : 24.2),
       },
     ];
     localStorage.setItem(STORAGE_KEYS.MEASUREMENTS, JSON.stringify(initialRecords));
@@ -188,37 +218,37 @@ export function seedSampleDataIfNeeded(profile: UserProfile): void {
     const sampleFoods: FoodItem[] = [
       {
         id: 'food_seed_1',
-        name: 'โจ๊กข้าวกล้องหมูสับใส่ไข่',
+        name: 'โจ๊กหมูสับใส่ไข่ลวกขิงซอย',
         mealType: 'เช้า',
-        baseCalories: 340,
-        baseProtein: 22,
-        baseCarbs: 45,
+        baseCalories: 320,
+        baseProtein: 20,
+        baseCarbs: 42,
         baseFat: 8,
         portion: 1.0,
-        calories: 340,
-        protein: 22,
-        carbs: 45,
+        calories: 320,
+        protein: 20,
+        carbs: 42,
         fat: 8,
         isUnsure: false,
         date: today,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(Date.now() - 3600000 * 4).toISOString(),
       },
       {
         id: 'food_seed_2',
-        name: 'ข้าวอกไก่ย่างน้ำพริกหนุ่มผักต้ม',
+        name: 'ข้าวกะเพราอกไก่ไข่ดาวน้ำ',
         mealType: 'กลางวัน',
-        baseCalories: 430,
-        baseProtein: 40,
-        baseCarbs: 48,
-        baseFat: 7,
+        baseCalories: 460,
+        baseProtein: 38,
+        baseCarbs: 52,
+        baseFat: 9,
         portion: 1.0,
-        calories: 430,
-        protein: 40,
-        carbs: 48,
-        fat: 7,
+        calories: 460,
+        protein: 38,
+        carbs: 52,
+        fat: 9,
         isUnsure: false,
         date: today,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(Date.now() - 3600000 * 1).toISOString(),
       },
     ];
     localStorage.setItem(STORAGE_KEYS.FOOD_LOGS, JSON.stringify(sampleFoods));
